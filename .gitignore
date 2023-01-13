@@ -106,3 +106,6 @@
 
 # Signal taps
 *.stp
+
+# QSYS
+**/lab3_qsys.qsys
