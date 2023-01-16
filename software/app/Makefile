@@ -142,7 +142,7 @@ ACDS_VERSION := 18.1
 ELF := main.elf
 
 # Paths to C, C++, and assembly source files.
-C_SRCS += read_adxl_simple.c
+C_SRCS += read_adxl_calibrer.c
 CXX_SRCS :=
 ASM_SRCS :=
 
