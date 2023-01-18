@@ -48,9 +48,14 @@ static void handle_button_interrupts(void* context, alt_u32 id);
 static void init_button_pio();
 static void handle_timer_interrupt(void *context);
 static void init_timer();
-void split_number(int number);
+void affiche_7seg(short number);
 void init_7seg();
+short conversion(int number);
 ////////////////////////////////////////////////////////
+int flag_data = 0;
+int dataX,dataY,dataZ=0;
+////////////////////////////////////////////////////////
+
 void write_to_addr(int value,int addr){
 	I2C_start(I2C_BASE,ADXL_ADDR,0); //set chip address and set to write/
 	I2C_write(I2C_BASE,addr,0);  	// set address to 0.
@@ -119,21 +124,33 @@ void ADXL_config(){
 	
 }
 
-void init_7seg(){
-	IOWR_ALTERA_AVALON_PIO_DATA(SEG1_BASE,0);
-	IOWR_ALTERA_AVALON_PIO_DATA(SEG2_BASE,0);
-	IOWR_ALTERA_AVALON_PIO_DATA(SEG3_BASE,0);
-	IOWR_ALTERA_AVALON_PIO_DATA(SEG4_BASE,0);
-	IOWR_ALTERA_AVALON_PIO_DATA(SEG5_BASE,0);
-	IOWR_ALTERA_AVALON_PIO_DATA(SEG6_BASE,0);
-}
-
 static void handle_button_interrupts(void* context, alt_u32 id){
-	int data1,data2,dataX,dataY,dataZ = 0;
+	alt_printf("IRQ Button \n");
+	flag_data+=1;
+	if (flag_data>2)flag_data=0;
+	
 	/* Reset the edge capture register. */
 	IOWR_ALTERA_AVALON_PIO_EDGE_CAP(BOUTON_BASE, 0x03);
-	alt_printf("IRQ Button \n");
-	
+}
+static void init_button_pio(){
+	/* Enable all 4 button interrupts. */
+	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(BOUTON_BASE, 0x03);
+	//alt_printf("MASK \n");
+	/* Reset the edge capture register. */
+	IOWR_ALTERA_AVALON_PIO_EDGE_CAP(BOUTON_BASE, 0x03);
+	//alt_printf("EDGE CAP \n");
+	/* Register the ISR. */
+	alt_irq_register(BOUTON_IRQ,NULL,(void*)handle_button_interrupts);
+	//alt_printf("irq \n");	
+}
+
+short conversion(int number){
+	return (short)number*(3.9);
+}
+
+static void handle_timer_interrupt(void *context){
+	int data1,data2=0;
+	alt_printf("IRQ Timer : \n");
 	data1 = read_addr(ADXL_X1);
 	//alt_printf("\tDATAX1 = 0x%x ",data1);
 	data2 = read_addr(ADXL_X0);
@@ -151,36 +168,45 @@ static void handle_button_interrupts(void* context, alt_u32 id){
 	data2 = read_addr(ADXL_Z0);
 	//alt_printf("\tDATAZ0 = 0x%x",data2);
 	dataZ = (data2) |(data1<<8);
-	alt_printf("\tDATAX = 0x%x DATAY = 0x%x DATAZ = 0x%x\n",dataX,dataY,dataZ);
 	
-	dataZ = dataZ*3.9;
-	dataZ = (int)dataZ;
-	split_number(dataZ);
+	switch(flag_data){
+		case 0 :
+			dataX = conversion(dataX);
+			affiche_7seg(dataX);
+			break;
+		case 1 :
+			dataY = conversion(dataY);
+			affiche_7seg(dataY);
+			break;
+		case 2 :
+			dataZ = conversion(dataZ);
+			affiche_7seg(dataZ);
+			break;
+		default :
+			affiche_7seg(0);
+	}
 	
-}
-static void init_button_pio(){
-	/* Enable all 4 button interrupts. */
-	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(BOUTON_BASE, 0x03);
-	//alt_printf("MASK \n");
-	/* Reset the edge capture register. */
-	IOWR_ALTERA_AVALON_PIO_EDGE_CAP(BOUTON_BASE, 0x03);
-	//alt_printf("EDGE CAP \n");
-	/* Register the ISR. */
-	alt_irq_register(BOUTON_IRQ,NULL,(void*)handle_button_interrupts);
-	//alt_printf("irq \n");	
-}
-
-static void handle_timer_interrupt(void *context){
-	alt_printf("INTERRUPT timer\n");
+	alt_printf("X = 0x%x - Y = 0x%x - Z = 0x%x\n",dataX,dataY,dataZ);
+	
 	IOWR_ALTERA_AVALON_TIMER_STATUS(TIMER_BASE, 0);
+	
+	
 }
 static void init_timer(){
-	alt_irq_register(TIMER_IRQ, NULL, handle_timer_interrupt);
+	alt_irq_register(TIMER_IRQ, NULL, (void*)handle_timer_interrupt);
 	
-	IOWR_ALTERA_AVALON_TIMER_CONTROL(TIMER_BASE, 0x7);
+	IOWR_ALTERA_AVALON_TIMER_CONTROL(TIMER_BASE, 0x3);
 }
 
-void split_number(int number){
+void init_7seg(){
+	IOWR_ALTERA_AVALON_PIO_DATA(SEG1_BASE,0);
+	IOWR_ALTERA_AVALON_PIO_DATA(SEG2_BASE,0);
+	IOWR_ALTERA_AVALON_PIO_DATA(SEG3_BASE,0);
+	IOWR_ALTERA_AVALON_PIO_DATA(SEG4_BASE,0);
+	IOWR_ALTERA_AVALON_PIO_DATA(SEG5_BASE,0);
+	IOWR_ALTERA_AVALON_PIO_DATA(SEG6_BASE,0);
+}
+void affiche_7seg(short number){
 	int flag_negatif=0;
 	int i =0;
 	int split[5] = {0,0,0,0,0};
