@@ -57,18 +57,23 @@ Il est nécessaire pour obtenir des mesures cohérentes d'accélérations de cal
 * OFSX (0x1E)
 * OFSY (0x1F)
 * OFSZ (0x20)
+
 Pour calibrer, j'ai réalisé la démarche suivante :
 * Définir les offset à 0
 * Mesurer les valeurs d'accélérations
 * Convertir cette valeur en "vraie" valeur avec le calcul suivant : 
-** Supponsons la valeur suivante sur Z : 0x740 -> (1856)_10 -> On multiplie par 3,9 -> 17260 on multiplie par 0,001 (mg -> g) -> 17,26 g
-* Calculer l'offset nécessaire pour que Z = 9.8, X = 0, Y = 0
-** On définit finalement les macros suivantes d'offset :
+
+*Supponsons la valeur suivante sur Z : (0x740)_16 -> (1856)_10 -> On multiplie par 3,9 -> 17260 on multiplie par 0,001 (mg -> g) -> 17,26 g*
+
+* Calculer l'offset nécessaire pour que Z = 9.8g, X = 0g, Y = 0g
+
+*On définit finalement les macros suivantes d'offset :*
 ```C
 #define OFFSET_X 2
 #define OFFSET_Y 6
 #define OFFSET_Z 20
 ```
+
 ### Routine Interruption Bouton
 ```C
 static void handle_button_interrupts(void* context, alt_u32 id){
@@ -118,15 +123,16 @@ static void handle_timer_interrupt(void *context){
 		default :
 			affiche_7seg(0);
 	}
-	
 	alt_printf("X = 0x%x - Y = 0x%x - Z = 0x%x\n",dataX,dataY,dataZ);
 	
 	IOWR_ALTERA_AVALON_TIMER_STATUS(TIMER_BASE, 0);
-	
-	
 }
 ```
 
 # Résultat 
+Ci-dessous une vidéo de fonctionnement du système :
+
+https://user-images.githubusercontent.com/77203492/213132360-ece91e29-d0ba-4c25-a9ba-3e47756f5af2.mp4
 
 # Conclusion 
+Avec le lab, j'ai compris comment communiquer avec l'accéléromètre par le biais du bus I2C, comment le configurer. Ainsi que la réalisation de l'architecture du système.
