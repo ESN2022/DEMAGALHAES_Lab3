@@ -124,7 +124,9 @@ static void handle_timer_interrupt(void *context){
 	IOWR_ALTERA_AVALON_TIMER_STATUS(TIMER_BASE, 0);
 	
 	
-}```
+}
+```
+
 # Résultat 
 
 # Conclusion 
